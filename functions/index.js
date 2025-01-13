@@ -25,8 +25,9 @@
 // The Firebase Admin SDK to access Firestore.
 // const { initializeApp } = require("firebase-admin/app");
 // const { getFirestore } = require("firebase-admin/firestore");
-
+// const { onDocumentWritten} = require("firebase-functions/v2/store");
 import { initializeApp } from "firebase-admin/app";
+import { getDatabase } from "firebase-admin/database";
 import { getFirestore } from "firebase-admin/firestore";
 import { onDocumentWritten } from "firebase-functions/v2/firestore";
 
@@ -106,20 +107,120 @@ export const feedbackTrigger = onDocumentWritten(
 export const employeesTrigger = onDocumentWritten(
     "/employee/{employeeId}",
     async (event) => {
-      const employeeId = event.params.employeeId;
-      const oldData = event.data?.before?.exists ? event.data.before.data() : null;
-      const newData = event.data?.after?.exists ? event.data.after.data() : null;
-  
-      if (!oldData && newData) {
-        // Document Created
-        await logHistoricalChange("CREATE", "employees", employeeId, null, newData);
-      } else if (oldData && newData) {
-        // Document Updated
-        await logHistoricalChange("UPDATE", "employees", employeeId, oldData, newData);
-      } else if (oldData && !newData) {
-        // Document Deleted
-        await logHistoricalChange("DELETE", "employees", employeeId, oldData, null);
-      }
+        const employeeId = event.params.employeeId;
+        const oldData = event.data?.before?.exists ? event.data.before.data() : null;
+        const newData = event.data?.after?.exists ? event.data.after.data() : null;
+
+        if (!oldData && newData) {
+            // Document Created
+            await logHistoricalChange("CREATE", "employee", employeeId, null, newData);
+        } else if (oldData && newData) {
+            // Document Updated
+            await logHistoricalChange("UPDATE", "employee", employeeId, oldData, newData);
+        } else if (oldData && !newData) {
+            // Document Deleted
+            await logHistoricalChange("DELETE", "employee", employeeId, oldData, null);
+        }
     }
-  );
-  
+);
+
+export const courseTrigger = onDocumentWritten(
+    "/courses/{courseId}",
+    async (event) => {
+        const courseId = event.params.courseId;
+        const oldData = event.data?.before?.exists ? event.data.before.data() : null;
+        const newData = event.data?.after?.exists ? event.data.after.data() : null;
+
+        if (!oldData && newData) {
+            // Document Created
+            await logHistoricalChange("CREATE", "courses", courseId, null, newData);
+        } else if (oldData && newData) {
+            // Document Updated
+            await logHistoricalChange("UPDATE", "courses", courseId, oldData, newData);
+        } else if (oldData && !newData) {
+            // Document Deleted
+            await logHistoricalChange("DELETE", "courses", courseId, oldData, null);
+        }
+    }
+);
+
+export const certificationTrigger = onDocumentWritten(
+    "/certification/{certificationId}",
+    async (event) => {
+        const certificationId = event.params.certificationId;
+        const oldData = event.data?.before?.exists ? event.data.before.data() : null;
+        const newData = event.data?.after?.exists ? event.data.after.data() : null;
+
+        if (!oldData && newData) {
+            // Document Created
+            await logHistoricalChange("CREATE", "certification", certificationId, null, newData);
+        } else if (oldData && newData) {
+            // Document Updated
+            await logHistoricalChange("UPDATE", "certification", certificationId, oldData, newData);
+        } else if (oldData && !newData) {
+            // Document Deleted
+            await logHistoricalChange("DELETE", "certification", certificationId, oldData, null);
+        }
+    }
+);
+
+export const submissionTrigger = onDocumentWritten(
+    "/submission/{submissionId}",
+    async (event) => {
+        const submissionId = event.params.submissionId;
+        const oldData = event.data?.before?.exists ? event.data.before.data() : null;
+        const newData = event.data?.after?.exists ? event.data.after.data() : null;
+
+        if (!oldData && newData) {
+            // Document Created
+            await logHistoricalChange("CREATE", "submission", submissionId, null, newData);
+        } else if (oldData && newData) {
+            // Document Updated
+            await logHistoricalChange("UPDATE", "submission", submissionId, oldData, newData);
+        } else if (oldData && !newData) {
+            // Document Deleted
+            await logHistoricalChange("DELETE", "submission", submissionId, oldData, null);
+        }
+    }
+);
+
+export const trainingEnrolmentTrigger = onDocumentWritten(
+    "/training_enrollment/{trainingEnrollmentId}",
+    async (event) => {
+        const trainingEnrollmentId = event.params.trainingEnrollmentId;
+        const oldData = event.data?.before?.exists ? event.data.before.data() : null;
+        const newData = event.data?.after?.exists ? event.data.after.data() : null;
+
+        if (!oldData && newData) {
+            // Document Created
+            await logHistoricalChange("CREATE", "training_enrollment", trainingEnrollmentId, null, newData);
+        } else if (oldData && newData) {
+            // Document Updated
+            await logHistoricalChange("UPDATE", "training_enrollment", trainingEnrollmentId, oldData, newData);
+        } else if (oldData && !newData) {
+            // Document Deleted
+            await logHistoricalChange("DELETE", "training_enrollment", trainingEnrollmentId, oldData, null);
+        }
+    }
+);
+
+const rtdb = getDatabase();
+export const replicateToRealtimeDB = onDocumentWritten("/{collectionId}/{docId}", async (event) => {
+    const collectionId = event.params.collectionId;
+    const docId = event.params.docId;
+    const afterData = event.data?.after?.exists ? event.data.after.data() : null;
+
+    try {
+        if (afterData) {
+            // Create or update data in Realtime Database
+            await rtdb.ref(`${collectionId}/${docId}`).set(afterData);
+            console.log(`Document ${docId} from ${collectionId} replicated to Realtime Database.`);
+        } else {
+            // Delete data in Realtime Database
+            await rtdb.ref(`${collectionId}/${docId}`).remove();
+            console.log(`Document ${docId} from ${collectionId} removed from Realtime Database.`);
+        }
+    } catch (error) {
+        console.error(`Error replicating document ${docId} from ${collectionId}:`, error);
+    }
+});
